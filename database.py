@@ -8,6 +8,11 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/quizz")
 
+# SQLAlchemy 1.4+ removed support for the "postgres://" URI scheme, 
+# replacing it specifically with "postgresql://". Render.com provides the deprecated version.
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # PostgreSQL doesn't need check_same_thread
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
