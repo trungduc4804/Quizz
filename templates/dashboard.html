@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block header %}Quản Lý Đề Thi của Tôi{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .quiz-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .quiz-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--surface-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .quiz-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .quiz-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-light);
+        margin-bottom: 0.5rem;
+        display: -webkit-box;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .quiz-meta {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .quiz-meta p {
+        margin: 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .quiz-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 12px;
+        border: 1px dashed var(--surface-border);
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--text-muted);
+        margin-bottom: 1.5rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <p style="color: var(--text-muted);">Đây là nơi lưu trữ tất cả các đề thi bạn đã dùng AI tạo ra để dễ dàng ôn tập
+        lại.</p>
+    <a href="/" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tạo Đề Mới</a>
+</div>
+
+{% if quiz_data and quiz_data|length > 0 %}
+<div class="quiz-grid">
+    {% for item in quiz_data %}
+    <div class="quiz-card">
+        <div>
+            <h3 class="quiz-title">{{ item.quiz.title }}</h3>
+            <div class="quiz-meta">
+                <p><i class="fa-regular fa-file"></i> Nguồn: {{ item.quiz.filename }}</p>
+                <p><i class="fa-solid fa-list-ol"></i> {{ item.quiz.question_count }} Câu Hỏi</p>
+                <p><i class="fa-regular fa-clock"></i> Thời gian: {{ item.quiz.time_limit }} Phút</p>
+                <p><i class="fa-solid fa-users"></i> Đã làm: {{ item.attempts_count }} lần</p>
+            </div>
+        </div>
+        <div class="quiz-actions">
+            <a href="/take/{{ item.quiz.id }}" class="btn btn-primary"
+                style="flex: 1; text-align: center; padding: 0.5rem;">
+                <i class="fa-solid fa-play"></i> Làm Bài
+            </a>
+            <a href="/preview/{{ item.quiz.id }}" class="btn btn-secondary"
+                style="background: transparent; border: 1px solid var(--surface-border); padding: 0.5rem;"
+                title="Chỉnh sửa đề">
+                <i class="fa-solid fa-pen"></i>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-folder-open"></i>
+    <h3>Bạn chưa có đề thi nào</h3>
+    <p style="color: var(--text-muted); margin-top: 0.5rem;">Hãy bắt đầu bằng việc tải tài liệu lên và nhờ AI tạo một bộ
+        đề trắc nghiệm mới.</p>
+    <a href="/" class="btn btn-primary" style="margin-top: 1.5rem;"><i class="fa-solid fa-upload"></i> Tạo Đề Đầu
+        Tiên</a>
+</div>
+{% endif %}
+{% endblock %}

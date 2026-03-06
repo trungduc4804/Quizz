@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="/upload-pdf" method="post" enctype="multipart/form-data"
+    onsubmit="showLoading('AI đang phân tích tài liệu...')">
+
+    <div class="form-group">
+        <label for="title" style="display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-heading"
+                style="color: var(--primary);"></i> Tên Bài Thi (Tùy chọn)</label>
+        <input type="text" name="title" id="title" class="file-input" placeholder="VD: Ôn Tập Giữa Kỳ Toán"
+            style="padding: 1rem; border-radius: 8px;">
+    </div>
+
+    <div class="file-upload-wrapper" id="drop-zone" onclick="document.getElementById('file-upload').click()">
+        <i class="fa-solid fa-cloud-arrow-up file-icon"></i>
+        <h3>Tải lên tài liệu PDF hoặc Word</h3>
+        <p id="file-name-display">Kéo thả file vào đây hoặc nhấp để chọn file</p>
+        <input type="file" id="file-upload" name="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            required>
+    </div>
+
+    <div class="settings-grid">
+        <div class="form-group">
+            <label for="question_count">Số lượng câu hỏi</label>
+            <input type="number" id="question_count" name="question_count" min="1" max="50" value="10">
+        </div>
+        <div class="form-group">
+            <label for="time_limit">Thời gian (phút)</label>
+            <input type="number" id="time_limit" name="time_limit" min="1" max="120" value="10">
+        </div>
+    </div>
+
+
+
+    <div class="form-group flex-gap">
+        <div class="checkbox-group">
+            <input type="checkbox" id="shuffle_questions" name="shuffle_questions" value="true">
+            <label for="shuffle_questions" style="margin:0;">Đảo vị trí câu hỏi</label>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="shuffle_options" name="shuffle_options" value="true">
+            <label for="shuffle_options" style="margin:0;">Đảo đáp án</label>
+        </div>
+    </div>
+
+    <div class="text-center mt-8">
+        <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-wand-magic-sparkles" style="margin-right: 8px;"></i> AI Tạo Đề Trắc Nghiệm
+        </button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const fileInput = document.getElementById('file-upload');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const dropZone = document.getElementById('drop-zone');
+
+    fileInput.addEventListener('click', function (e) {
+        e.stopPropagation(); // Ngăn chặn sự kiện click nổi bọt lên drop-zone
+    });
+
+    fileInput.addEventListener('change', function (e) {
+        if (this.files && this.files.length > 0) {
+            fileNameDisplay.innerText = this.files[0].name;
+            dropZone.style.borderColor = 'var(--success)';
+        } else {
+            fileNameDisplay.innerText = 'Kéo thả file vào đây hoặc nhấp để chọn file';
+            dropZone.style.borderColor = 'var(--primary)';
+        }
+    });
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.style.background = 'rgba(79, 70, 229, 0.2)', false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.style.background = 'rgba(79, 70, 229, 0.05)', false);
+    });
+
+    dropZone.addEventListener('drop', function (e) {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if (files.length > 0) {
+            let file = files[0];
+            let filename = file.name.toLowerCase();
+            let isPdfOrDocx = file.type === "application/pdf" ||
+                file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+                filename.endsWith('.pdf') ||
+                filename.endsWith('.docx');
+
+            if (isPdfOrDocx) {
+                fileInput.files = files;
+                fileNameDisplay.innerText = file.name;
+                dropZone.style.borderColor = 'var(--success)';
+            } else {
+                alert('Vui lòng kéo thả đúng định dạng PDF hoặc Word (.docx).');
+            }
+        }
+    });
+</script>
+{% endblock %}

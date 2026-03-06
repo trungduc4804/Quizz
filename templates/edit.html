@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block header %}Kiểm Tra & Chỉnh Sửa Câu Hỏi{% endblock %}
+
+{% block extra_head %}
+<style>
+    .question-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+    .remove-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        color: var(--danger);
+        cursor: pointer;
+        opacity: 0.7;
+        transition: var(--transition);
+        font-size: 1.25rem;
+    }
+
+    .remove-btn:hover {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .q-header {
+        margin-bottom: 1rem;
+    }
+
+    .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+        .options-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .correct-select {
+        margin-top: 1rem;
+        background: rgba(30, 41, 59, 0.9) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <p>Vui lòng xem lại các câu hỏi do AI tạo ra. Bạn có thể sửa nội dung, xóa câu hỏi học thêm câu mới tùy ý.</p>
+</div>
+
+<div class="settings-grid mb-8" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+    <div class="form-group mb-0">
+        <label>Thời gian (phút)</label>
+        <input type="number" id="global_time_limit" value="{{ quiz.time_limit }}" min="1">
+    </div>
+    <div class="form-group mb-0 flex-gap mt-4" style="align-items: center;">
+        <input type="checkbox" id="global_shuffle_q" {% if quiz.shuffle_questions %}checked{% endif %}>
+        <label for="global_shuffle_q" style="margin:0;">Đảo vị trí câu hỏi</label>
+        <br>
+        <input type="checkbox" id="global_shuffle_o" {% if quiz.shuffle_options %}checked{% endif %}>
+        <label for="global_shuffle_o" style="margin:0;">Đảo đáp án</label>
+    </div>
+</div>
+
+<div id="questions-container">
+    <!-- Loaded via JS -->
+</div>
+
+<div class="flex-between mt-8">
+    <button class="btn btn-secondary" onclick="addQuestion()">
+        <i class="fa-solid fa-plus" style="margin-right: 8px;"></i> Thêm Câu Hỏi
+    </button>
+    <button class="btn btn-primary" onclick="saveAndStart()">
+        <i class="fa-solid fa-play" style="margin-right: 8px;"></i> Lưu & Bắt Đầu Làm Bài
+    </button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const quizId = {{ quiz.id }};
+    let questions = [];
+
+    // Load questions on init
+    window.onload = async function () {
+        showLoading("Đang tải dữ liệu...");
+        try {
+            const response = await fetch(`/api/quiz/${quizId}`);
+            if (!response.ok) throw new Error("Failed to load");
+            const data = await response.json();
+            questions = data.questions;
+            renderQuestions();
+        } catch (e) {
+            alert('Lỗi tải dữ liệu quiz');
+        }
+        hideLoading();
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+
+        questions.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = `question-card key-${index}`;
+
+            card.innerHTML = `
+                <button class="remove-btn" onclick="removeQuestion(${index})"><i class="fa-solid fa-trash"></i></button>
+                <div class="form-group q-header">
+                    <label>Câu hỏi ${index + 1}</label>
+                    <textarea rows="2" onchange="updateQ(${index}, 'text', this.value)">${q.text}</textarea>
+                </div>
+                <div class="options-grid">
+                    <div class="form-group mb-2">
+                        <label>Đáp án A</label>
+                        <textarea rows="2" style="resize: vertical; min-height: 50px;" onchange="updateQ(${index}, 'option_a', this.value)">${q.option_a}</textarea>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label>Đáp án B</label>
+                        <textarea rows="2" style="resize: vertical; min-height: 50px;" onchange="updateQ(${index}, 'option_b', this.value)">${q.option_b}</textarea>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label>Đáp án C</label>
+                        <textarea rows="2" style="resize: vertical; min-height: 50px;" onchange="updateQ(${index}, 'option_c', this.value)">${q.option_c}</textarea>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label>Đáp án D</label>
+                        <textarea rows="2" style="resize: vertical; min-height: 50px;" onchange="updateQ(${index}, 'option_d', this.value)">${q.option_d}</textarea>
+                    </div>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Đáp án đúng</label>
+                    <select class="correct-select" onchange="updateQ(${index}, 'correct_option', this.value)">
+                        <option value="A" ${q.correct_option === 'A' ? 'selected' : ''}>A</option>
+                        <option value="B" ${q.correct_option === 'B' ? 'selected' : ''}>B</option>
+                        <option value="C" ${q.correct_option === 'C' ? 'selected' : ''}>C</option>
+                        <option value="D" ${q.correct_option === 'D' ? 'selected' : ''}>D</option>
+                    </select>
+                </div>
+                <div class="form-group mb-0">
+                    <label>Giải thích chi tiết (Tùy chọn)</label>
+                    <textarea rows="1" onchange="updateQ(${index}, 'explanation', this.value)">${q.explanation || ''}</textarea>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function updateQ(idx, field, val) {
+        questions[idx][field] = val;
+    }
+
+    function removeQuestion(idx) {
+        if (confirm("Bạn có chắc chắn muốn xóa câu này?")) {
+            questions.splice(idx, 1);
+            renderQuestions();
+        }
+    }
+
+    function addQuestion() {
+        questions.push({
+            id: null,
+            text: "Câu hỏi mới",
+            option_a: "Đáp án A",
+            option_b: "Đáp án B",
+            option_c: "Đáp án C",
+            option_d: "Đáp án D",
+            correct_option: "A",
+            explanation: ""
+        });
+        renderQuestions();
+        // scroll to bottom
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    async function saveAndStart() {
+        showLoading("Đang lưu thay đổi...");
+        const payload = {
+            time_limit: parseInt(document.getElementById('global_time_limit').value) || 10,
+            shuffle_questions: document.getElementById('global_shuffle_q').checked,
+            shuffle_options: document.getElementById('global_shuffle_o').checked,
+            questions: questions
+        };
+
+        try {
+            const resp = await fetch(`/api/quiz/${quizId}/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (resp.ok) {
+                window.location.href = `/take/${quizId}`;
+            } else {
+                throw new Error("Validation failed");
+            }
+        } catch (e) {
+            alert("Lỗi khi lưu bài. Vui lòng kiểm tra lại kết nối.");
+            hideLoading();
+        }
+    }
+</script>
+{% endblock %}

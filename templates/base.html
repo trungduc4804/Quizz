@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Quizz của Đào Hiền{% endblock %}</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Header Navigation Bar -->
+    <nav
+        style="width: 100%; background: var(--surface); backdrop-filter: blur(12px); border-bottom: 1px solid var(--surface-border); padding: 1rem 2rem; position: fixed; top: 0; left: 0; z-index: 500; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <a href="/"
+            style="color: var(--primary); font-size: 1.25rem; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-brain"></i> Quizz.AI
+        </a>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            {% if current_user %}
+            <span style="color: var(--text-muted); margin-right: 1rem;"><i class="fa-solid fa-user"></i> Xin chào,
+                <strong style="color: var(--text-main);">{{ current_user.username }}</strong></span>
+            <a href="/dashboard" class="btn btn-secondary"
+                style="padding: 0.5rem 1rem; font-size: 0.9rem; background: transparent;"><i
+                    class="fa-solid fa-folder-open"></i> Đề thi của tôi</a>
+            <a href="/" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.9rem;"><i
+                    class="fa-solid fa-plus"></i> Lên đề mới</a>
+            <a href="/logout" class="btn btn-danger"
+                style="padding: 0.5rem 1rem; font-size: 0.9rem; background: transparent; border: 1px solid var(--danger);"><i
+                    class="fa-solid fa-right-from-bracket"></i> Đăng xuất</a>
+            {% else %}
+            <a href="/login" class="btn btn-primary" style="padding: 0.5rem 1.5rem; font-size: 0.9rem;"><i
+                    class="fa-solid fa-right-to-bracket"></i> Đăng Nhập / Đăng Ký</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="glass-panel" style="margin-top: 5rem;">
+        <header>
+            <h1>{% block header %}Đào Hiền Ngu{% endblock %}</h1>
+        </header>
+
+        <section id="content">
+            {% block content %}{% endblock %}
+        </section>
+    </main>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h3 id="loading-message">Đang xử lý...</h3>
+        <p>Vui lòng đợi một lát trong khi AI đang phân tích dữ liệu.</p>
+    </div>
+
+    <!-- Common Utilities JS -->
+    <script>
+        function showLoading(message) {
+            const overlay = document.getElementById('loading-overlay');
+            const msgEl = document.getElementById('loading-message');
+            if (message) msgEl.innerText = message;
+            overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('active');
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

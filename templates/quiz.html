@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block header %}Làm Bài Thi{% endblock %}
+
+{% block extra_head %}
+<style>
+    .quiz-container {
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .quiz-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--surface-border);
+    }
+
+    .timer {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin-bottom: 2rem;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .question-text {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        line-height: 1.5;
+    }
+
+    .options-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-grow: 1;
+    }
+
+    .option-btn {
+        text-align: left;
+        padding: 1rem 1.5rem;
+        background: rgba(15, 23, 42, 0.5);
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        color: var(--text-main);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+    }
+
+    .option-btn:hover {
+        background: rgba(79, 70, 229, 0.2);
+        border-color: var(--primary);
+    }
+
+    .option-btn.selected {
+        background: rgba(79, 70, 229, 0.3);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .option-btn.correct-ans {
+        background: rgba(16, 185, 129, 0.2) !important;
+        border-color: var(--success) !important;
+        color: var(--success) !important;
+    }
+
+    .option-btn.wrong-ans {
+        background: rgba(239, 68, 68, 0.2) !important;
+        border-color: var(--danger) !important;
+        color: var(--danger) !important;
+    }
+
+    .explosion-box {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid #3b82f6;
+        border-radius: 4px;
+        font-size: 0.95rem;
+        display: none;
+    }
+
+    .option-letter {
+        font-weight: 700;
+        margin-right: 1rem;
+        color: var(--primary);
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        font-size: 0.8rem;
+    }
+
+    .quiz-footer {
+        display: flex;
+        justify-content: space-between;
+        margin-top: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container" id="quiz-ui" style="display:none;">
+    <div class="progress-bar">
+        <div class="progress-fill" id="progress"></div>
+    </div>
+
+    <div class="quiz-header">
+        <div id="q-counter">Câu hỏi 1/10</div>
+        <div class="timer">
+            <i class="fa-regular fa-clock"></i>
+            <span id="time-display">00:00</span>
+        </div>
+    </div>
+
+    <div class="question-area">
+        <div class="question-text" id="q-text">Đang tải câu hỏi...</div>
+        <div class="options-list" id="options-container">
+            <!-- Options injected here -->
+        </div>
+        <div class="explosion-box" id="explanation-box"></div>
+    </div>
+
+    <div class="quiz-footer">
+        <button class="btn btn-secondary" id="btn-prev" onclick="goTo(-1)" disabled>
+            <i class="fa-solid fa-arrow-left" style="margin-right: 8px;"></i> Câu Trước
+        </button>
+        <button class="btn btn-primary" id="btn-next" onclick="goTo(1)">
+            Câu Tiếp <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+        </button>
+        <button class="btn btn-success" id="btn-submit" onclick="submitQuiz()"
+            style="display:none; background: var(--success); color: white;">
+            Nộp Bài <i class="fa-solid fa-check" style="margin-left: 8px;"></i>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const quizId = {{ quiz.id }};
+    let quizData = null;
+    let questions = [];
+    let currentIdx = 0;
+    let answers = {}; // mapping question index to selected option (A, B, C, D)
+    let timeRemaining = 0;
+    let totalTime = 0;
+    let timerInterval = null;
+
+    window.onload = async function () {
+        showLoading("Đang chuẩn bị đề thi cho bạn...");
+        try {
+            const resp = await fetch(`/api/quiz/${quizId}`);
+            if (!resp.ok) throw new Error("Failed to load");
+            quizData = await resp.json();
+
+            questions = quizData.questions;
+            if (quizData.shuffle_questions) shuffleArray(questions);
+            if (quizData.shuffle_options) {
+                questions.forEach(q => {
+                    // Logic to shuffle options but keep track of correct option
+                    // Keeping simple mapping for options
+                });
+            }
+
+            timeRemaining = quizData.time_limit * 60;
+            totalTime = timeRemaining;
+
+            document.getElementById('quiz-ui').style.display = 'flex';
+            renderQuestion(0);
+            startTimer();
+        } catch (e) {
+            alert('Không thể tải bài thi');
+        }
+        hideLoading();
+    };
+
+    function startTimer() {
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimerDisplay();
+            if (timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                alert("Hết giờ! Hệ thống sẽ nộp bài tự động.");
+                submitQuiz();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const m = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+        const s = (timeRemaining % 60).toString().padStart(2, '0');
+        document.getElementById('time-display').innerText = `${m}:${s}`;
+
+        if (timeRemaining < 60) {
+            document.getElementById('time-display').style.color = 'var(--danger)';
+        }
+    }
+
+    function renderQuestion(idx) {
+        currentIdx = idx;
+        const q = questions[idx];
+
+        document.getElementById('q-counter').innerText = `Câu hỏi ${idx + 1} / ${questions.length}`;
+        document.getElementById('progress').style.width = `${((idx + 1) / questions.length) * 100}%`;
+        document.getElementById('q-text').innerText = q.text;
+
+        const optionsContainer = document.getElementById('options-container');
+        optionsContainer.innerHTML = '';
+
+        const letters = ['A', 'B', 'C', 'D'];
+        const optionsText = [q.option_a, q.option_b, q.option_c, q.option_d];
+
+        // Show options disabled if already answered
+        const hasAnswered = answers[q.id] !== undefined;
+
+        letters.forEach((letter, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.dataset.letter = letter;
+
+            if (hasAnswered) {
+                btn.disabled = true;
+                if (letter === q.correct_option) {
+                    btn.classList.add('correct-ans');
+                } else if (answers[q.id] === letter) {
+                    btn.classList.add('wrong-ans');
+                }
+            }
+
+            btn.onclick = () => selectOption(q.id, letter, btn);
+            btn.innerHTML = `<span class="option-letter">${letter}</span> ${optionsText[i]}`;
+            optionsContainer.appendChild(btn);
+        });
+
+        const explanationBox = document.getElementById('explanation-box');
+        if (hasAnswered && q.explanation) {
+            explanationBox.innerHTML = `<strong><i class="fa-solid fa-lightbulb"></i> Giải thích:</strong><br>${q.explanation}`;
+            explanationBox.style.display = 'block';
+        } else {
+            explanationBox.style.display = 'none';
+        }
+
+        document.getElementById('btn-prev').disabled = idx === 0;
+
+        if (idx === questions.length - 1) {
+            document.getElementById('btn-next').style.display = 'none';
+            document.getElementById('btn-submit').style.display = 'inline-flex';
+        } else {
+            document.getElementById('btn-next').style.display = 'inline-flex';
+            document.getElementById('btn-submit').style.display = 'none';
+        }
+    }
+
+    function selectOption(qId, letter, btn) {
+        if (answers[qId] !== undefined) return; // Prevent double clicking
+
+        answers[qId] = letter;
+        const q = questions[currentIdx];
+        const isCorrect = letter === q.correct_option;
+
+        const btns = document.querySelectorAll('.option-btn');
+        btns.forEach(b => {
+            b.disabled = true;
+            if (b.dataset.letter === q.correct_option) {
+                b.classList.add('correct-ans');
+            }
+        });
+
+        if (!isCorrect) {
+            btn.classList.add('wrong-ans');
+        }
+
+        const explanationBox = document.getElementById('explanation-box');
+        if (q.explanation) {
+            explanationBox.innerHTML = `<strong><i class="fa-solid fa-lightbulb"></i> Giải thích:</strong><br>${q.explanation}`;
+            explanationBox.style.display = 'block';
+        }
+    }
+
+    function goTo(direction) {
+        const newIdx = currentIdx + direction;
+        if (newIdx >= 0 && newIdx < questions.length) {
+            renderQuestion(newIdx);
+        }
+    }
+
+    async function submitQuiz() {
+        clearInterval(timerInterval);
+        showLoading("Đang nộp bài...");
+
+        const payload = {
+            answers: answers,
+            time_taken: totalTime - timeRemaining
+        };
+
+        try {
+            const resp = await fetch(`/api/quiz/${quizId}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                window.location.href = `/result/${data.attempt_id}`;
+            } else {
+                throw new Error("Nộp bài thất bại");
+            }
+        } catch (e) {
+            alert('Lỗi trong lúc nộp bài.');
+            hideLoading();
+        }
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+</script>
+{% endblock %}

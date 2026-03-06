@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block header %}Kết Quả Bài Thi{% endblock %}
+
+{% block extra_head %}
+<style>
+    .score-card {
+        text-align: center;
+        padding: 3rem;
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius);
+        margin-bottom: 3rem;
+    }
+
+    .score-circle {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 700;
+        margin: 0 auto 1.5rem auto;
+        border: 8px solid var(--surface-border);
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .score-circle.excellent {
+        border-color: var(--success);
+        color: var(--success);
+    }
+
+    .score-circle.good {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    .score-circle.fair {
+        border-color: #f59e0b;
+        color: #f59e0b;
+    }
+
+    .score-circle.poor {
+        border-color: var(--danger);
+        color: var(--danger);
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: center;
+        gap: 3rem;
+        color: var(--text-muted);
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    .review-item {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .review-status.correct {
+        color: var(--success);
+    }
+
+    .review-status.wrong {
+        color: var(--danger);
+    }
+
+    .option-review {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .option-review.is-correct {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid var(--success);
+    }
+
+    .option-review.is-wrong {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid var(--danger);
+    }
+
+    .explanation {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 4px solid #3b82f6;
+        border-radius: 4px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set percentage = (attempt.score / attempt.total_questions) * 100 %}
+{% set grade = 'excellent' if percentage >= 80 else 'good' if percentage >= 60 else 'fair' if percentage >= 40 else
+'poor' %}
+
+<div class="score-card">
+    <div class="score-circle {{ grade }}">
+        {{ attempt.score }}/{{ attempt.total_questions }}
+    </div>
+    <h2>Hoàn Thành Bài Thi!</h2>
+    <div class="stats-row mt-4">
+        <div class="stat-item">
+            <span class="stat-value">{{ "%.1f"|format(percentage) }}%</span>
+            <span>Tỉ Lệ Đúng</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-value">
+                {% set mm = attempt.time_taken // 60 %}
+                {% set ss = attempt.time_taken % 60 %}
+                {{ "%02d:%02d"|format(mm, ss) }}
+            </span>
+            <span>Thời Gian Làm Bài</span>
+        </div>
+    </div>
+</div>
+
+<h3 class="mb-4">Phân Tích Chi Tiết</h3>
+<div class="reviews-container">
+    {% for q in quiz.questions %}
+    {% set user_choice = user_answers.get(q.id|string, None) %}
+    {% set is_correct = (user_choice == q.correct_option) %}
+
+    <div class="review-item">
+        <div class="review-header">
+            <span>Câu hỏi {{ loop.index }}</span>
+            {% if is_correct %}
+            <span class="review-status correct"><i class="fa-solid fa-check-circle"></i> Đúng</span>
+            {% else %}
+            <span class="review-status wrong"><i class="fa-solid fa-times-circle"></i> Sai</span>
+            {% endif %}
+        </div>
+        <p style="color:var(--text-main); font-size:1.1rem;">{{ q.text }}</p>
+
+        <div class="options-list mt-4">
+            {% for letter, option_text in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)]
+            %}
+            {% set is_this_correct = (letter == q.correct_option) %}
+            {% set is_this_user_choice = (letter == user_choice) %}
+
+            {% set classes = "option-review" %}
+            {% if is_this_correct %}
+            {% set classes = classes ~ " is-correct" %}
+            {% elif is_this_user_choice and not is_correct %}
+            {% set classes = classes ~ " is-wrong" %}
+            {% endif %}
+
+            <div class="{{ classes }}">
+                <strong>{{ letter }}.</strong> {{ option_text }}
+                {% if is_this_user_choice %}<span style="float:right;">(Bạn đã chọn)</span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if q.explanation %}
+        <div class="explanation">
+            <strong><i class="fa-solid fa-lightbulb"></i> Giải thích:</strong><br>
+            {{ q.explanation }}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<div class="text-center mt-8 mb-8">
+    <a href="/" class="btn btn-primary"><i class="fa-solid fa-house" style="margin-right: 8px;"></i> Về Trang Chủ</a>
+</div>
+{% endblock %}
