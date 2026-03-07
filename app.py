@@ -110,7 +110,14 @@ async def register(
 ):
     user_db = db.query(User).filter(User.username == username).first()
     if user_db:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        return RedirectResponse(url="/login?error=username", status_code=303)
+    
+    email_db = db.query(User).filter(User.email == email).first()
+    if email_db:
+        # Redirect back to login with an error flag specifically for email if you prefer, or just raise 400
+        # Wait, the frontend handles error=credentials for login, but for register it just submits POST.
+        # So we can return a redirect with error=email
+        return RedirectResponse(url="/login?error=email", status_code=303)
     
     hashed_password = get_password_hash(password)
     new_user = User(username=username, email=email, hashed_password=hashed_password)
@@ -350,4 +357,8 @@ async def validation_exception_handler(request: Request, exc: Exception):
          </div>
          """, status_code=500)
 
-    return HTMLResponse(content="Internal Error", status_code=500)
+    # Hiển thị thông báo lỗi chi tiết thay vì "Internal Error" để dễ debug trên Render
+    return HTMLResponse(
+        content=f"<div style='color: white; padding: 20px; font-family: sans-serif;'><h1>Internal Error</h1><p>Chi tiết lỗi:</p><pre>{error_str}</pre><br><a href='/' style='color: #3b82f6;'>Quay Lại Trang Chủ</a></div>", 
+        status_code=500
+    )

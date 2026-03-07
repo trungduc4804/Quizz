@@ -130,6 +130,16 @@
         const errorHtml = '<div class="alert" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Tên tài khoản hoặc mật khẩu không chính xác!</div>';
         container.insertAdjacentHTML('afterbegin', errorHtml);
         window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error') === 'username') {
+        const errorHtml = '<div class="alert" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Tên tài khoản đã tồn tại! Vui lòng chọn tên khác.</div>';
+        container.insertAdjacentHTML('afterbegin', errorHtml);
+        switchTab('register');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error') === 'email') {
+        const errorHtml = '<div class="alert" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Email này đã được đăng ký! Vui lòng sử dụng email khác.</div>';
+        container.insertAdjacentHTML('afterbegin', errorHtml);
+        switchTab('register');
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     function switchTab(tab) {
