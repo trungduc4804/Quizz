@@ -83,7 +83,8 @@
         </div>
         <div class="form-group mb-8">
             <label for="login-password">Mật khẩu</label>
-            <input type="password" id="login-password" name="password" required placeholder="Nhập mật khẩu"
+            <input type="password" id="login-password" name="password" maxlength="72" required
+                placeholder="Nhập mật khẩu"
                 style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--surface-border); background: rgba(15, 23, 42, 0.5); color: var(--text-main); font-family: var(--font-family); font-size: 1rem;">
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -105,7 +106,7 @@
         </div>
         <div class="form-group mb-8">
             <label for="reg-password">Mật khẩu</label>
-            <input type="password" id="reg-password" name="password" required placeholder="Tạo mật khẩu"
+            <input type="password" id="reg-password" name="password" maxlength="72" required placeholder="Tạo mật khẩu"
                 style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--surface-border); background: rgba(15, 23, 42, 0.5); color: var(--text-main); font-family: var(--font-family); font-size: 1rem;">
         </div>
         <button type="submit" class="btn btn-secondary" style="width: 100%;">
@@ -137,6 +138,11 @@
         window.history.replaceState({}, document.title, window.location.pathname);
     } else if (urlParams.get('error') === 'email') {
         const errorHtml = '<div class="alert" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Email này đã được đăng ký! Vui lòng sử dụng email khác.</div>';
+        container.insertAdjacentHTML('afterbegin', errorHtml);
+        switchTab('register');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (urlParams.get('error') === 'password_length') {
+        const errorHtml = '<div class="alert" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> Mật khẩu quá dài (tối đa 72 ký tự)! Vui lòng chọn mật khẩu ngắn hơn.</div>';
         container.insertAdjacentHTML('afterbegin', errorHtml);
         switchTab('register');
         window.history.replaceState({}, document.title, window.location.pathname);

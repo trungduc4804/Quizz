@@ -108,6 +108,8 @@ async def register(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    if len(password) > 72:
+        return RedirectResponse(url="/login?error=password_length", status_code=303)
     user_db = db.query(User).filter(User.username == username).first()
     if user_db:
         return RedirectResponse(url="/login?error=username", status_code=303)
@@ -132,6 +134,9 @@ async def login(
     password: str = Form(...),
     db: Session = Depends(get_db)
 ):
+    if len(password) > 72:
+        return RedirectResponse(url="/login?error=credentials", status_code=303)
+        
     user = db.query(User).filter(User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
         # Redirect back to login with an error flag
